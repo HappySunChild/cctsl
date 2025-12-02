@@ -1,4 +1,4 @@
-local dummy_turtle = require("utility/dummy_turtle")
+local dummy_turtle = require("utility.dummy_turtle")
 
 local UNKNOWN_PERIPHERAL = 'Unable to find peripheral "%s"'
 local INVALID_INVENTORY = 'Peripheral "%s" is not a valid inventory!'

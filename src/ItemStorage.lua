@@ -1,4 +1,4 @@
-local get_inventory = require("utility/get_inventory")
+local get_inventory = require("utility.get_inventory")
 
 local UNKNOWN_INVENTORY = 'Unable to find inventory "%s", is it being tracked?'
 

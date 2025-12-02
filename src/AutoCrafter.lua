@@ -1,5 +1,5 @@
-local distribute = require("utility/distribute")
-local find = require("utility/find")
+local distribute = require("utility.distribute")
+local find = require("utility.find")
 
 local UNKNOWN_PERIPHERAL = 'Unable to find peripheral "%s"'
 local UNKNOWN_PROCESSOR = 'Unable to find processor "%s", did you add it?'

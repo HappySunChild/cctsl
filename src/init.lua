@@ -7,7 +7,7 @@ local original_path = package.path
 package.path = path_format:gsub("~", lib_dir) .. original_path
 
 local storage_lib = {
-	format_name = require("format/format_name"),
+	format_name = require("format.format_name"),
 
 	AutoCrafter = require("AutoCrafter"),
 	StorageDisplay = require("StorageDisplay"),
