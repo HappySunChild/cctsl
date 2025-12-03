@@ -7,8 +7,20 @@ local PATTERN_NOT_SUPPORTED = 'Processor "%s" does not support this pattern!'
 local PROCESSOR_BUSY = 'Processor "%s" is busy!'
 local NOT_ENOUGH_INGREDIENTS = "Not enough ingredients!"
 
+---@class cctsl.AutoCrafter.PatternInfo
+---@field results table<string, integer>
+---@field input_slots { [1]: integer, [2]: string }[] Slots to input items into.
+---@field output_slots number[] Slots to constantly pull into the system.
+---@field poll_rate number How frequently the processor checks the output per second.
+---@field label string
+
+---@class cctsl.AutoCrafter.Processor
+---@field patterns string[]
+---@field in_use boolean
+---@field reserved boolean
+
 ---Returns a dictionary of ingredients needed to produce a pattern.
----@param pattern AutoCrafter.PatternInfo
+---@param pattern cctsl.AutoCrafter.PatternInfo
 ---@param iterations integer
 ---@return table<string, integer>
 local function get_pattern_ingredients(pattern, iterations)
@@ -23,7 +35,7 @@ local function get_pattern_ingredients(pattern, iterations)
 	return requirements
 end
 
----@param pattern AutoCrafter.PatternInfo
+---@param pattern cctsl.AutoCrafter.PatternInfo
 ---@return integer count
 local function get_pattern_output_count(pattern)
 	local total_count = 0
@@ -35,44 +47,29 @@ local function get_pattern_output_count(pattern)
 	return total_count
 end
 
----@class AutoCrafter.PatternItem
----@field [1] integer
----@field [2] string
-
----@class AutoCrafter.PatternInfo
----@field results table<string, integer>
----@field input_slots AutoCrafter.PatternItem[] Slots to input items into.
----@field output_slots number[] Slots to constantly pull into the system.
----@field poll_rate number How frequently the processor checks the output per second.
----@field label string
-
----@class AutoCrafter.Processor
----@field patterns string[]
----@field in_use boolean
----@field reserved boolean
-
----@class AutoCrafter
----@field processors table<string, AutoCrafter.Processor>
----@field patterns table<string, AutoCrafter.PatternInfo>
----@field _storage ItemStorage
+---An object that handles basic item autocrafting.
+---@class cctsl.AutoCrafter
+---@field processors table<string, cctsl.AutoCrafter.Processor>
+---@field patterns table<string, cctsl.AutoCrafter.PatternInfo>
+---@field item_storage cctsl.ItemStorage
 local CLASS = {
 	---Registers a pattern.
-	---@param self AutoCrafter
+	---@param self cctsl.AutoCrafter
 	---@param pattern string
-	---@param info AutoCrafter.PatternInfo
-	register_pattern = function(self, pattern, info)
+	---@param info cctsl.AutoCrafter.PatternInfo
+	load_pattern = function(self, pattern, info)
 		self.patterns[pattern] = info
 	end,
 	---Deregisters a pattern.
-	---@param self AutoCrafter
+	---@param self cctsl.AutoCrafter
 	---@param pattern string
-	deregister_pattern = function(self, pattern)
+	unload_pattern = function(self, pattern)
 		self.patterns[pattern] = nil
 	end,
 	---Returns an array of all registers patterns.
-	---@param self AutoCrafter
+	---@param self cctsl.AutoCrafter
 	---@return string[]
-	get_registered_patterns = function(self)
+	get_loaded_patterns = function(self)
 		local list = {}
 
 		for name in next, self.patterns do
@@ -83,10 +80,10 @@ local CLASS = {
 	end,
 
 	---Adds a processor to the AutoProcessing manager.
-	---@param self AutoCrafter
+	---@param self cctsl.AutoCrafter
 	---@param proc_name string The name of the inventory the processor uses.
 	---@param patterns string[] All of the patterns this processor supports.
-	add_processor = function(self, proc_name, patterns)
+	load_processor = function(self, proc_name, patterns)
 		if not peripheral.isPresent(proc_name) then
 			error(UNKNOWN_PERIPHERAL:format(proc_name), 2)
 		end
@@ -98,13 +95,13 @@ local CLASS = {
 		}
 	end,
 	---Removes a processor from the AutoProcessing manager
-	---@param self AutoCrafter
+	---@param self cctsl.AutoCrafter
 	---@param proc_name string The name of the inventory the processor uses.
-	remove_processor = function(self, proc_name)
+	unload_processor = function(self, proc_name)
 		self.processors[proc_name] = nil
 	end,
 	---Returns an array of all the processors in the AutoProcessing manager.
-	---@param self AutoCrafter
+	---@param self cctsl.AutoCrafter
 	---@return string[]
 	get_processors = function(self)
 		local processors = {}
@@ -119,7 +116,7 @@ local CLASS = {
 	end,
 
 	---Adds a pattern to a processor.
-	---@param self AutoCrafter
+	---@param self cctsl.AutoCrafter
 	---@param proc_name string
 	---@param pattern string
 	add_pattern_to_processor = function(self, proc_name, pattern)
@@ -136,7 +133,7 @@ local CLASS = {
 		table.insert(processor.patterns, pattern)
 	end,
 	---Removes a pattern from a processor.
-	---@param self AutoCrafter
+	---@param self cctsl.AutoCrafter
 	---@param proc_name string
 	---@param pattern string
 	remove_pattern_from_processor = function(self, proc_name, pattern)
@@ -154,7 +151,7 @@ local CLASS = {
 	end,
 
 	---Returns whether the specified processor is available.
-	---@param self AutoCrafter
+	---@param self cctsl.AutoCrafter
 	---@param proc_name string The name of the inventory the processor uses.
 	---@return boolean available Where the processor is available.
 	is_processor_available = function(self, proc_name)
@@ -167,7 +164,7 @@ local CLASS = {
 		return not processor.in_use and not processor.reserved
 	end,
 	---Returns an array of all available processors that are able to produce the specified item.
-	---@param self AutoCrafter
+	---@param self cctsl.AutoCrafter
 	---@param pattern string The name of the item to search with.
 	---@return string[] processors A list of names for available processors.
 	get_available_processors = function(self, pattern)
@@ -184,7 +181,7 @@ local CLASS = {
 		return processors
 	end,
 	---Returns an array of all registered patterns that result in the specified item.
-	---@param self AutoCrafter
+	---@param self cctsl.AutoCrafter
 	---@param item string
 	---@return string[] patterns
 	get_patterns_with_result = function(self, item)
@@ -199,7 +196,7 @@ local CLASS = {
 		return patterns
 	end,
 	---Returns whether the autocrafter is able to craft the specified item.
-	---@param self AutoCrafter
+	---@param self cctsl.AutoCrafter
 	---@param item string
 	---@param item_count integer
 	---@return boolean
@@ -232,12 +229,12 @@ local CLASS = {
 	end,
 
 	---Returns a dictionary of all the missing ingredients for the specified pattern.
-	---@param self AutoCrafter
+	---@param self cctsl.AutoCrafter
 	---@param pattern string The pattern to check the ingredients of.
 	---@param count integer The number of times the pattern is crafted (ie. crafting a pattern multiple times).
 	---@return table<string, integer>
 	get_missing_ingredients = function(self, pattern, count)
-		local system_items = self._storage:get_system_items()
+		local system_items = self.item_storage:get_all_items()
 
 		local missing = {}
 		local ingredients = get_pattern_ingredients(self.patterns[pattern], count)
@@ -253,7 +250,7 @@ local CLASS = {
 		return missing
 	end,
 
-	---@param self AutoCrafter
+	---@param self cctsl.AutoCrafter
 	---@param proc_name string The name of the processor to use.
 	---@param pattern string The pattern to use with the processor.
 	---@param count integer The number of times to process this pattern on this processor.
@@ -277,7 +274,7 @@ local CLASS = {
 
 		local pattern_info = self.patterns[pattern]
 
-		local system = self._storage
+		local system = self.item_storage
 
 		local poll_duration = 1 / pattern_info.poll_rate
 		local output_per_pattern = get_pattern_output_count(pattern_info)
@@ -316,7 +313,7 @@ local CLASS = {
 
 		return true
 	end,
-	---@param self AutoCrafter
+	---@param self cctsl.AutoCrafter
 	---@param processors string[]
 	---@param pattern string
 	---@param total_count integer
@@ -353,19 +350,20 @@ local CLASS = {
 }
 local METATABLE = { __index = CLASS }
 
----@param storage ItemStorage
+---@param item_storage cctsl.ItemStorage
 ---@param initial_processors? table<string, string[]>
----@return AutoCrafter
-local function AutoCrafter(storage, initial_processors)
+---@return cctsl.AutoCrafter
+local function AutoCrafter(item_storage, initial_processors)
 	local new_autocrafter = setmetatable({
-		_storage = storage,
+		item_storage = item_storage,
+
 		patterns = {},
 		processors = {},
 	}, METATABLE)
 
 	if initial_processors ~= nil then
 		for inv_name, patterns in next, initial_processors do
-			pcall(new_autocrafter.add_processor, new_autocrafter, inv_name, patterns)
+			pcall(new_autocrafter.load_processor, new_autocrafter, inv_name, patterns)
 		end
 	end
 

@@ -9,30 +9,33 @@ local function default_item_sort(a, b)
 	return a.count > b.count
 end
 
----@class ItemStorage
+---An object that tracks and handles item logistics.
+---@class cctsl.ItemStorage
 ---@field inventories table<string, peripheral.Inventory>
 ---@field package _item_cache table<string, peripheral.InventoryItem[]>
 local CLASS = {
-	---@param self ItemStorage
-	---@param inv_name string The name of the peripheral to track (i.e. `"left"` or `"minecraft:chest_0"`)
-	load_peripheral = function(self, inv_name)
+	---Loads an inventory into the system.
+	---@param self cctsl.ItemStorage
+	---@param inv_name string The name of the peripheral to track (i.e. `"minecraft:chest_0"`)
+	load_inventory = function(self, inv_name)
 		self.inventories[inv_name] = get_inventory(inv_name)
 	end,
-	---@param self ItemStorage
-	---@param inv_name string The name of the peripheral to stop tracking (i.e. `"left"` or `"minecraft:chest_0"`)
-	unload_peripheral = function(self, inv_name)
+	---Unloads an inventory from the system.
+	---@param self cctsl.ItemStorage
+	---@param inv_name string The name of the peripheral to stop tracking (i.e. `"minecraft:chest_0"`)
+	unload_inventory = function(self, inv_name)
 		self.inventories[inv_name] = nil
 	end,
 
-	---Updates the internal item cache by reading the contents of all the tracked inventories.
-	---@param self ItemStorage
+	---Updates the internal item cache by reading the contents of all tracked inventories.
+	---@param self cctsl.ItemStorage
 	sync_inventories = function(self)
 		for inv_name, inventory in next, self.inventories do
 			self._item_cache[inv_name] = inventory.list()
 		end
 	end,
 	---Returns an array of all the inventories in the system.
-	---@param self ItemStorage
+	---@param self cctsl.ItemStorage
 	---@return string[]
 	get_inventories = function(self)
 		local inventories = {}
@@ -45,7 +48,7 @@ local CLASS = {
 	end,
 
 	---Calculates the total size (slots) of the system.
-	---@param self ItemStorage
+	---@param self cctsl.ItemStorage
 	---@return integer
 	get_total_size = function(self)
 		local size = 0
@@ -57,7 +60,7 @@ local CLASS = {
 		return size
 	end,
 	---Returns a dictionary of all the items, and their counts, inside the system.
-	---@param self ItemStorage
+	---@param self cctsl.ItemStorage
 	---@return table<string, integer>
 	get_all_items = function(self)
 		local output = {}
@@ -76,7 +79,7 @@ local CLASS = {
 	---Returns an array of all the items in the system, sorted.
 	---
 	---You can specify your own sorter callback.
-	---@param self ItemStorage
+	---@param self cctsl.ItemStorage
 	---@param sorter? fun(a: peripheral.InventoryItem, b: peripheral.InventoryItem): boolean
 	---@return peripheral.InventoryItem[]
 	get_all_items_sorted = function(self, sorter)
@@ -102,7 +105,7 @@ local CLASS = {
 	---	print(inv, slot, item.count)
 	---end
 	---```
-	---@param self ItemStorage
+	---@param self cctsl.ItemStorage
 	---@param query string
 	---@return fun(): string?, integer?, peripheral.InventoryItem?
 	query_items = function(self, query)
@@ -129,7 +132,7 @@ local CLASS = {
 	end,
 
 	---Pulls items from one inventory into another.
-	---@param self ItemStorage
+	---@param self cctsl.ItemStorage
 	---@param inv_from string
 	---@param slot_from integer
 	---@param inv_to string
@@ -146,7 +149,7 @@ local CLASS = {
 		return to_inventory.pullItems(inv_from, slot_from, count, slot_to)
 	end,
 	---Pushes items from one inventory into another.
-	---@param self ItemStorage
+	---@param self cctsl.ItemStorage
 	---@param inv_from string
 	---@param slot_from integer
 	---@param inv_to string
@@ -164,8 +167,9 @@ local CLASS = {
 	end,
 
 	---Imports an item into the system from an external inventory, at the specified slot.
-	---@see StorageSystem.import_item
-	---@param self ItemStorage
+	---
+	---This method is exclusively meant to be used for importing items into the system.
+	---@param self cctsl.ItemStorage
 	---@param inv_from string
 	---@param slot_from integer
 	---@param count? integer
@@ -203,10 +207,10 @@ local CLASS = {
 		return total_transferred
 	end,
 	---Imports all items from an inventory.
-	---@param self ItemStorage
+	---@param self cctsl.ItemStorage
 	---@param inv_from string
 	---@return integer
-	import_inventory = function(self, inv_from)
+	import_entire_inventory = function(self, inv_from)
 		local total_transferred = 0
 
 		local inventory = get_inventory(inv_from)
@@ -220,8 +224,9 @@ local CLASS = {
 		return total_transferred
 	end,
 	---Imports the specified item into the system from an external inventory.
-	---@see StorageSystem.pull_items
-	---@param self ItemStorage
+	---
+	---This method is exclusively meant to be used for importing items into the system.
+	---@param self cctsl.ItemStorage
 	---@param query string
 	---@param inv_from string
 	---@param count? integer
@@ -247,8 +252,9 @@ local CLASS = {
 		return total_transferred
 	end,
 	---Exports the specified item from the system into an external inventory.
-	---@see StorageSystem.push_items
-	---@param self ItemStorage
+	---
+	---This method is exclusively meant to be used for exporting items from the system.
+	---@param self cctsl.ItemStorage
 	---@param query string
 	---@param inv_to string
 	---@param slot_to? integer
@@ -274,7 +280,7 @@ local CLASS = {
 local METATABLE = { __index = CLASS }
 
 ---@param initial_inventories? string[]
----@return ItemStorage
+---@return cctsl.ItemStorage
 local function ItemStorage(initial_inventories)
 	local new_storagesystem = setmetatable({
 		inventories = {},
@@ -283,7 +289,7 @@ local function ItemStorage(initial_inventories)
 
 	if initial_inventories ~= nil then
 		for _, inventory in next, initial_inventories do
-			new_storagesystem:load_peripheral(inventory)
+			new_storagesystem:load_inventory(inventory)
 		end
 	end
 
