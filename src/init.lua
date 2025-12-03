@@ -6,11 +6,12 @@ local original_path = package.path
 
 package.path = path_format:gsub("~", lib_dir) .. original_path
 
-local storage_lib = {
+local cctsl = {
 	AutoCrafter = require("AutoCrafter"),
 	ItemStorage = require("ItemStorage"),
+	FluidStorage = require("FluidStorage"),
 }
 
 package.path = original_path
 
-return storage_lib
+return cctsl
