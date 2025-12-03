@@ -47,7 +47,7 @@ local CLASS = {
 	---Calculates the total size (slots) of the system.
 	---@param self ItemStorage
 	---@return integer
-	get_system_size = function(self)
+	get_total_size = function(self)
 		local size = 0
 
 		for _, inventory in next, self.inventories do
@@ -59,7 +59,7 @@ local CLASS = {
 	---Returns a dictionary of all the items, and their counts, inside the system.
 	---@param self ItemStorage
 	---@return table<string, integer>
-	get_system_items = function(self)
+	get_all_items = function(self)
 		local output = {}
 
 		for _, inv_items in next, self._item_cache do
@@ -79,10 +79,10 @@ local CLASS = {
 	---@param self ItemStorage
 	---@param sorter? fun(a: peripheral.InventoryItem, b: peripheral.InventoryItem): boolean
 	---@return peripheral.InventoryItem[]
-	get_system_items_sorted = function(self, sorter)
+	get_all_items_sorted = function(self, sorter)
 		local output = {}
 
-		for name, count in next, self:get_system_items() do
+		for name, count in next, self:get_all_items() do
 			table.insert(output, {
 				name = name,
 				count = count,
