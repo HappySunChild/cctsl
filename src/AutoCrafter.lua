@@ -295,7 +295,7 @@ local CLASS = {
 				system:export_item(ingr_name, proc_name, input_slot, ingr_count)
 			end
 
-			system:update_inventories()
+			system:sync_inventories()
 
 			-- wait for result items back
 			-- should this instead check for items being added into the system?

@@ -26,7 +26,7 @@ local CLASS = {
 
 	---Updates the internal item cache by reading the contents of all the tracked inventories.
 	---@param self ItemStorage
-	update_inventories = function(self)
+	sync_inventories = function(self)
 		for inv_name, inventory in next, self.inventories do
 			self._item_cache[inv_name] = inventory.list()
 		end
