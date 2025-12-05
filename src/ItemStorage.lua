@@ -11,26 +11,26 @@ end
 
 ---An object that tracks and handles item logistics.
 ---@class cctsl.ItemStorage
----@field inventories table<string, peripheral.Inventory>
+---@field loaded_inventories table<string, peripheral.Inventory>
 ---@field package _item_cache table<string, peripheral.InventoryItem[]>
 local CLASS = {
 	---Loads an inventory into the system.
 	---@param self cctsl.ItemStorage
 	---@param inv_name string The name of the peripheral to track (i.e. `"minecraft:chest_0"`)
 	load_inventory = function(self, inv_name)
-		self.inventories[inv_name] = get_inventory(inv_name)
+		self.loaded_inventories[inv_name] = get_inventory(inv_name)
 	end,
 	---Unloads an inventory from the system.
 	---@param self cctsl.ItemStorage
 	---@param inv_name string The name of the peripheral to stop tracking (i.e. `"minecraft:chest_0"`)
 	unload_inventory = function(self, inv_name)
-		self.inventories[inv_name] = nil
+		self.loaded_inventories[inv_name] = nil
 	end,
 
 	---Updates the internal item cache by reading the contents of all tracked inventories.
 	---@param self cctsl.ItemStorage
 	sync_inventories = function(self)
-		for inv_name, inventory in next, self.inventories do
+		for inv_name, inventory in next, self.loaded_inventories do
 			self._item_cache[inv_name] = inventory.list()
 		end
 	end,
@@ -40,7 +40,7 @@ local CLASS = {
 	get_inventories = function(self)
 		local inventories = {}
 
-		for inv_name in next, self.inventories do
+		for inv_name in next, self.loaded_inventories do
 			table.insert(inventories, inv_name)
 		end
 
@@ -53,7 +53,7 @@ local CLASS = {
 	get_total_size = function(self)
 		local size = 0
 
-		for _, inventory in next, self.inventories do
+		for _, inventory in next, self.loaded_inventories do
 			size = size + inventory.size()
 		end
 
@@ -106,18 +106,18 @@ local CLASS = {
 	---end
 	---```
 	---@param self cctsl.ItemStorage
-	---@param query string
+	---@param item_name string
 	---@return fun(): string?, integer?, peripheral.InventoryItem?
-	query_items = function(self, query)
+	query_items = function(self, item_name)
 		local cur_inv = nil
 		local cur_slot = nil
 
 		return function()
-			for inv_name, items in next, self._item_cache, cur_inv do
-				for slot, item in next, items, cur_slot do
+			for inv_name, inv_items in next, self._item_cache, cur_inv do
+				for slot, item in next, inv_items, cur_slot do
 					cur_slot = slot
 
-					if item.name:match(query) then
+					if item.name == item_name then
 						return inv_name, slot, item
 					end
 				end
@@ -140,7 +140,7 @@ local CLASS = {
 	---@param count? integer
 	---@return integer transferred
 	pull_items = function(self, inv_from, slot_from, inv_to, slot_to, count)
-		local to_inventory = self.inventories[inv_to] ---@type peripheral.Inventory?
+		local to_inventory = self.loaded_inventories[inv_to] ---@type peripheral.Inventory?
 
 		if to_inventory == nil then
 			error(UNKNOWN_INVENTORY:format(inv_to), 2)
@@ -157,7 +157,7 @@ local CLASS = {
 	---@param count? integer
 	---@return integer transferred
 	push_items = function(self, inv_from, slot_from, inv_to, slot_to, count)
-		local from_inventory = self.inventories[inv_from] ---@type peripheral.Inventory?
+		local from_inventory = self.loaded_inventories[inv_from] ---@type peripheral.Inventory?
 
 		if from_inventory == nil then
 			error(UNKNOWN_INVENTORY:format(inv_from), 2)
@@ -175,7 +175,7 @@ local CLASS = {
 	---@param count? integer
 	---@return integer transferred
 	import_from_slot = function(self, inv_from, slot_from, count)
-		local current_inv = next(self.inventories)
+		local current_inv = next(self.loaded_inventories)
 
 		if current_inv == nil then
 			return 0
@@ -194,7 +194,7 @@ local CLASS = {
 			end
 
 			if transferred == 0 then -- cycle to next inventory, current inventory might be full
-				current_inv = next(self.inventories, current_inv)
+				current_inv = next(self.loaded_inventories, current_inv)
 
 				if current_inv == nil then -- system is entirely full, break out of loop
 					break
