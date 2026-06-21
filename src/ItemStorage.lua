@@ -2,8 +2,8 @@ local get_inventory = require("utility.get_inventory")
 
 local UNKNOWN_INVENTORY = 'Unable to find inventory "%s", is it being tracked?'
 
----@param a peripheral.InventoryItem
----@param b peripheral.InventoryItem
+---@param a cc.types.items.BasicItemStackDetails
+---@param b cc.types.items.BasicItemStackDetails
 ---@return boolean
 local function default_item_sort(a, b)
 	return a.count > b.count
@@ -11,8 +11,8 @@ end
 
 ---An object that tracks and handles item logistics.
 ---@class cctsl.ItemStorage
----@field loaded_inventories table<string, peripheral.Inventory>
----@field package _item_cache table<string, peripheral.InventoryItem[]>
+---@field loaded_inventories table<string, cc.peripheral.Inventory>
+---@field package _item_cache table<string, cc.types.items.BasicItemStackDetails[]>
 local CLASS = {
 	---Loads an inventory into the system.
 	---@param self cctsl.ItemStorage
@@ -80,8 +80,8 @@ local CLASS = {
 	---
 	---You can specify your own sorter callback.
 	---@param self cctsl.ItemStorage
-	---@param sorter? fun(a: peripheral.InventoryItem, b: peripheral.InventoryItem): boolean
-	---@return peripheral.InventoryItem[]
+	---@param sorter? fun(a: cc.types.items.BasicItemStackDetails, b: cc.types.items.BasicItemStackDetails): boolean
+	---@return cc.types.items.BasicItemStackDetails[]
 	get_all_items_sorted = function(self, sorter)
 		local output = {}
 
@@ -107,7 +107,7 @@ local CLASS = {
 	---```
 	---@param self cctsl.ItemStorage
 	---@param item_name string
-	---@return fun(): string?, integer?, peripheral.InventoryItem?
+	---@return fun(): string?, integer?, cc.types.items.BasicItemStackDetails?
 	query_items = function(self, item_name)
 		local cur_inv = nil
 		local cur_slot = nil
@@ -140,7 +140,7 @@ local CLASS = {
 	---@param count? integer
 	---@return integer transferred
 	pull_items = function(self, inv_from, slot_from, inv_to, slot_to, count)
-		local to_inventory = self.loaded_inventories[inv_to] ---@type peripheral.Inventory?
+		local to_inventory = self.loaded_inventories[inv_to] ---@type cc.peripheral.Inventory?
 
 		if to_inventory == nil then
 			error(UNKNOWN_INVENTORY:format(inv_to), 2)
@@ -157,7 +157,7 @@ local CLASS = {
 	---@param count? integer
 	---@return integer transferred
 	push_items = function(self, inv_from, slot_from, inv_to, slot_to, count)
-		local from_inventory = self.loaded_inventories[inv_from] ---@type peripheral.Inventory?
+		local from_inventory = self.loaded_inventories[inv_from] ---@type cc.peripheral.Inventory?
 
 		if from_inventory == nil then
 			error(UNKNOWN_INVENTORY:format(inv_from), 2)

@@ -2,7 +2,7 @@ local UNKNOWN_PERIPHERAL = 'Unable to find peripheral "%s"'
 local INVALID_TANK = 'Peripheral "%s" is not a valid tank!'
 
 ---@param tank_name string
----@return peripheral.FluidStorage
+---@return cc.peripheral.FluidStorage
 local function get_tank(tank_name)
 	local tank = peripheral.wrap(tank_name)
 

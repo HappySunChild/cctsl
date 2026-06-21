@@ -3,8 +3,8 @@ local get_tank = require("utility.get_tank")
 local UNKNOWN_TANK = 'Unable to find tank "%s", is it being tacked?'
 
 ---@class cctsl.FluidStorage
----@field loaded_tanks table<string, peripheral.FluidStorage>
----@field package _fluid_cache table<string, peripheral.FluidTankInfo[]>
+---@field loaded_tanks table<string, cc.peripheral.FluidStorage>
+---@field package _fluid_cache table<string, cc.types.peripheral.FluidTankDetails>
 local CLASS = {
 	---@param self cctsl.FluidStorage
 	---@param tank_name string
@@ -56,7 +56,7 @@ local CLASS = {
 	---comment
 	---@param self cctsl.FluidStorage
 	---@param fluid_name string
-	---@return fun(): string?, peripheral.FluidTankInfo?, integer?
+	---@return fun(): string?, cc.types.peripheral.FluidTankDetails?, integer?
 	query_fluids = function(self, fluid_name)
 		local cur_tank = nil
 		local cur_fluid = nil
@@ -86,7 +86,7 @@ local CLASS = {
 	---@param fluid_name? string
 	---@return integer transferred
 	pull_fluids = function(self, tank_from, tank_to, limit, fluid_name)
-		local to_tank = self.loaded_tanks[tank_to] ---@type peripheral.FluidStorage?
+		local to_tank = self.loaded_tanks[tank_to] ---@type cc.peripheral.FluidStorage?
 
 		if to_tank == nil then
 			error(UNKNOWN_TANK:format(tank_to), 2)
@@ -101,7 +101,7 @@ local CLASS = {
 	---@param fluid_name? string
 	---@return integer transferred
 	push_fluids = function(self, tank_from, tank_to, limit, fluid_name)
-		local from_tank = self.loaded_tanks[tank_from] ---@type peripheral.FluidStorage?
+		local from_tank = self.loaded_tanks[tank_from] ---@type cc.peripheral.FluidStorage?
 
 		if from_tank == nil then
 			error(UNKNOWN_TANK:format(from_tank), 2)

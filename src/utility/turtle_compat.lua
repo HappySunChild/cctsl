@@ -1,5 +1,5 @@
 return {
-	---@return table<integer, peripheral.InventoryItem?>
+	---@return table<integer, cc.types.items.BasicItemStackDetails?>
 	list = function()
 		local items = {}
 
@@ -19,4 +19,4 @@ return {
 		return turtle.getItemSpace(slot) + turtle.getItemCount(slot)
 	end,
 	getItemDetail = turtle.getItemDetail,
-} ---@type peripheral.Inventory
+} ---@type cc.peripheral.Inventory
