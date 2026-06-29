@@ -1,6 +1,3 @@
-local distribute = require("utility.distribute")
-local find = require("utility.find")
-
 local UNKNOWN_PERIPHERAL = 'Unable to find peripheral "%s"'
 local UNKNOWN_PROCESSOR = 'Unable to find processor "%s", did you add it?'
 local PATTERN_NOT_SUPPORTED = 'Processor "%s" does not support this pattern!'
@@ -13,6 +10,54 @@ local NOT_ENOUGH_INGREDIENTS = "Not enough ingredients!"
 ---@field output_slots number[] Slots to constantly pull into the system.
 ---@field poll_rate number How frequently the processor checks the output per second.
 ---@field label string
+
+---Find the index of a value in the passed table.
+---@generic K
+---@param haystack table<K, any>
+---@param needle? any
+---@return K?
+local function find(haystack, needle)
+	for key, value in next, haystack do
+		if value == needle then
+			return key
+		end
+	end
+
+	return nil
+end
+
+---@generic K, V
+---@param in_tbl table<K, V>
+---@param count integer
+---@return fun(tbl: table<K, V>, index: K?): K?, V?, integer?
+---@return K, nil
+local function distribute(in_tbl, count)
+	local count_per_item = math.floor(count / #in_tbl)
+	local extra_items = count % #in_tbl
+
+	---@generic K, V
+	---@param tbl table<K, V>
+	---@param index K?
+	return function(tbl, index)
+		local current_index = next(in_tbl, index)
+
+		if current_index == nil then
+			return nil
+		end
+
+		local iterations = count_per_item + (extra_items > 0 and 1 or 0)
+
+		extra_items = extra_items - 1
+
+		if iterations == 0 then
+			return nil
+		end
+
+		return current_index, tbl[current_index], iterations
+	end,
+		in_tbl,
+		nil
+end
 
 ---@class cctsl.AutoCrafter.Processor
 ---@field patterns string[]
@@ -51,7 +96,7 @@ end
 ---@class cctsl.AutoCrafter
 ---@field processors table<string, cctsl.AutoCrafter.Processor>
 ---@field patterns table<string, cctsl.AutoCrafter.PatternInfo>
----@field item_storage cctsl.ItemStorage
+---@field request_network cctsl.ItemNetwork
 local CLASS = {
 	---Registers a pattern.
 	---@param self cctsl.AutoCrafter
@@ -234,16 +279,16 @@ local CLASS = {
 	---@param count integer The number of times the pattern is crafted (ie. crafting a pattern multiple times).
 	---@return table<string, integer>
 	get_missing_ingredients = function(self, pattern, count)
-		local system_items = self.item_storage:get_all_items()
+		local network_items = self.request_network:get_network_items()
 
 		local missing = {}
 		local ingredients = get_pattern_ingredients(self.patterns[pattern], count)
 
 		for ingr_name, ingr_count in next, ingredients do
-			local system_count = system_items[ingr_name] or 0
+			local network_count = network_items[ingr_name] or 0
 
-			if system_count < ingr_count then
-				missing[ingr_name] = ingr_count - system_count
+			if network_count < ingr_count then
+				missing[ingr_name] = ingr_count - network_count
 			end
 		end
 
@@ -274,7 +319,7 @@ local CLASS = {
 
 		local pattern_info = self.patterns[pattern]
 
-		local system = self.item_storage
+		local request_network = self.request_network
 
 		local poll_duration = 1 / pattern_info.poll_rate
 		local output_per_pattern = get_pattern_output_count(pattern_info)
@@ -289,10 +334,12 @@ local CLASS = {
 			for input_slot, ingredient in next, input_slots do
 				local ingr_count, ingr_name = ingredient[1], ingredient[2]
 
-				system:export_item(ingr_name, proc_name, input_slot, ingr_count)
+				request_network:export_items(proc_name, function(item, inv_name, slot)
+					return item.name == ingr_name
+				end, input_slot, ingr_count)
 			end
 
-			system:sync_inventories()
+			request_network:sync()
 
 			-- wait for result items back
 			-- should this instead check for items being added into the system?
@@ -302,7 +349,7 @@ local CLASS = {
 				sleep(poll_duration)
 
 				for _, output_slot in next, output_slots do
-					local transferred = system:import_from_slot(proc_name, output_slot)
+					local transferred = request_network:import_from_slot(proc_name, output_slot)
 
 					remaining = remaining - transferred
 				end
@@ -350,12 +397,12 @@ local CLASS = {
 }
 local METATABLE = { __index = CLASS }
 
----@param item_storage cctsl.ItemStorage
+---@param item_network cctsl.ItemNetwork
 ---@param initial_processors? table<string, string[]>
 ---@return cctsl.AutoCrafter
-local function AutoCrafter(item_storage, initial_processors)
+local function AutoCrafter(item_network, initial_processors)
 	local new_autocrafter = setmetatable({
-		item_storage = item_storage,
+		request_network = item_network,
 
 		patterns = {},
 		processors = {},

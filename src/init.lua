@@ -1,17 +1,22 @@
-local lib_path = select(2, ...)
-local lib_dir = fs.getDir(lib_path)
+assert(
+	peripheral.find("modem"),
+	"No modem connected to computer! cctsl requires a wired modem to connect to external inventories!"
+)
 
-local path_format = "~;/~/?.lua;/~/?/init.lua;"
-local original_path = package.path
+local LIB_PATH = select(2, ...)
+local LIB_DIR = fs.getDir(LIB_PATH)
 
-package.path = path_format:gsub("~", lib_dir) .. original_path
+local PATH_FORMAT = "~;/~/?.lua;/~/?/init.lua;"
+local ORIGINAL_PATH = package.path
+
+package.path = string.gsub(PATH_FORMAT, "~", LIB_DIR) .. ORIGINAL_PATH
 
 local cctsl = {
 	AutoCrafter = require("AutoCrafter"),
-	ItemStorage = require("ItemStorage"),
-	FluidStorage = require("FluidStorage"),
+	ItemNetwork = require("ItemNetwork"),
+	FluidNetwork = require("FluidNetwork"),
 }
 
-package.path = original_path
+package.path = ORIGINAL_PATH
 
 return cctsl
