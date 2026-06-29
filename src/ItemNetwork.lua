@@ -341,12 +341,6 @@ local CLASS = {
 
 		return total_transferred
 	end,
-
-	---Returns whether every single slot in every inventory connected to the network has an item stack.
-	---@param self cctsl.ItemNetwork
-	is_full = function(self)
-		return self:get_network_size()
-	end,
 }
 local METATABLE = { __index = CLASS }
 
