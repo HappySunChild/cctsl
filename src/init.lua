@@ -15,6 +15,8 @@ local cctsl = {
 	AutoCrafter = require("AutoCrafter"),
 	ItemNetwork = require("ItemNetwork"),
 	FluidNetwork = require("FluidNetwork"),
+
+	filters = require("filters"),
 }
 
 package.path = ORIGINAL_PATH
