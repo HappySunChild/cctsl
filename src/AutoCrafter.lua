@@ -334,7 +334,7 @@ local CLASS = {
 			for input_slot, ingredient in next, input_slots do
 				local ingr_count, ingr_name = ingredient[1], ingredient[2]
 
-				request_network:export_items(proc_name, function(item, inv_name, slot)
+				request_network:export_to(proc_name, function(item, inv_name, slot)
 					return item.name == ingr_name
 				end, input_slot, ingr_count)
 			end

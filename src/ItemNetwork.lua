@@ -70,7 +70,7 @@ end
 local CLASS = {
 	---Adds an inventory into the network.
 	---@param self cctsl.ItemNetwork
-	---@param inv_name string The name of the peripheral to track
+	---@param inv_name string name of the peripheral to track
 	add_inventory = function(self, inv_name)
 		self.tracked_inventories[inv_name] = {
 			name = inv_name,
@@ -81,7 +81,7 @@ local CLASS = {
 	end,
 	---Adds multiple inventories to the network at once.
 	---@param self cctsl.ItemNetwork
-	---@param inv_names string[] The names of peripherals to track
+	---@param inv_names string[] names of peripherals to track
 	---@see cctsl.ItemNetwork.add_inventory
 	add_inventories = function(self, inv_names)
 		for _, inv_name in next, inv_names do
@@ -95,13 +95,13 @@ local CLASS = {
 	end,
 	---Removes an inventory from the network.
 	---@param self cctsl.ItemNetwork
-	---@param inv_name string The name of the peripheral to stop tracking
+	---@param inv_name string name of the peripheral to stop tracking
 	remove_inventory = function(self, inv_name)
 		self.tracked_inventories[inv_name] = nil
 	end,
 	---Removes multiple inventories from the network at once.
 	---@param self cctsl.ItemNetwork
-	---@param inv_names string[]
+	---@param inv_names string[] names of peripherals to stop tracking
 	remove_inventories = function(self, inv_names)
 		for _, inv_name in next, inv_names do
 			self.tracked_inventories[inv_name] = nil
@@ -167,7 +167,7 @@ local CLASS = {
 	---
 	---You can specify your own sorter callback.
 	---@param self cctsl.ItemNetwork
-	---@param sorter? fun(a: cc.types.items.BasicItemStackDetails, b: cc.types.items.BasicItemStackDetails): boolean
+	---@param sorter? fun(a: cc.types.items.BasicItemStackDetails, b: cc.types.items.BasicItemStackDetails): boolean function to determine sort order
 	---@return cc.types.items.BasicItemStackDetails[]
 	get_network_items_sorted = function(self, sorter)
 		local sorted_output = {}
@@ -193,7 +193,7 @@ local CLASS = {
 	---end
 	---```
 	---@param self cctsl.ItemNetwork
-	---@param filter cctsl.types.ItemFilter
+	---@param filter cctsl.types.ItemFilter function to determine what items are yielded
 	---@return fun(): string?, integer?, cc.types.items.BasicItemStackDetails?
 	iter_items = function(self, filter)
 		local cur_inv = nil
@@ -220,13 +220,13 @@ local CLASS = {
 
 	---Pulls items from one inventory into another.
 	---@param self cctsl.ItemNetwork
-	---@param inv_from string
-	---@param slot_from integer
-	---@param inv_to string
-	---@param slot_to? integer
-	---@param count? integer
+	---@param inv_from string name of inventory to pull from
+	---@param slot_from integer slot index to pull from
+	---@param inv_to string name of inventory to pull to
+	---@param slot_to? integer slot index to pull to
+	---@param count? integer number of items to push
 	---@return integer transferred
-	pull_items = function(self, inv_from, slot_from, inv_to, slot_to, count)
+	pull_from_to = function(self, inv_from, slot_from, inv_to, slot_to, count)
 		local to_inventory = self.tracked_inventories[inv_to] ---@type cctsl.types.Inventory?
 
 		if to_inventory == nil then
@@ -237,13 +237,13 @@ local CLASS = {
 	end,
 	---Pushs items from one inventory into another.
 	---@param self cctsl.ItemNetwork
-	---@param inv_from string
-	---@param slot_from integer
-	---@param inv_to string
-	---@param slot_to? integer
-	---@param count? integer
+	---@param inv_from string name of inventory to push from
+	---@param slot_from integer slot index to push from
+	---@param inv_to string name of inventory to push to
+	---@param slot_to? integer slot index to push to
+	---@param count? integer number of items to push
 	---@return integer transferred
-	push_items = function(self, inv_from, slot_from, inv_to, slot_to, count)
+	push_from_to = function(self, inv_from, slot_from, inv_to, slot_to, count)
 		local from_inventory = self.tracked_inventories[inv_from] ---@type cctsl.types.Inventory?
 
 		if from_inventory == nil then
@@ -255,9 +255,9 @@ local CLASS = {
 
 	---Imports an item stack into the network from an external inventory, at the specified slot.
 	---@param self cctsl.ItemNetwork
-	---@param inv_from string Name of external inventory to pull from
-	---@param slot_from integer Slot index of item stack to pull
-	---@param count? integer Number of items to pull from the item stack
+	---@param inv_from string name of external inventory to pull from
+	---@param slot_from integer slot index of item stack to pull
+	---@param count? integer number of items to pull from the item stack
 	---@return integer total_transferred
 	import_from_slot = function(self, inv_from, slot_from, count)
 		local current_inv = next(self.tracked_inventories)
@@ -272,7 +272,7 @@ local CLASS = {
 
 		while true do
 			local remaining = count ~= nil and count - total_transferred or nil
-			local transferred = self:pull_items(inv_from, slot_from, current_inv, nil, remaining)
+			local transferred = self:pull_from_to(inv_from, slot_from, current_inv, nil, remaining)
 
 			total_transferred = total_transferred + transferred
 
@@ -297,11 +297,11 @@ local CLASS = {
 
 	---Imports all items into the network from an external inventory that pass the specified filter.
 	---@param self cctsl.ItemNetwork
-	---@param inv_from string Name of external inventory to import from
-	---@param filter cctsl.types.ItemFilter Function that determines what items are imported
-	---@param count number? Number of items to pull from the inventory
+	---@param inv_from string name of external inventory to import from
+	---@param filter cctsl.types.ItemFilter function to determine what items are imported
+	---@param count number? number of items to pull from the inventory
 	---@return integer total_transferred
-	import_items = function(self, inv_from, filter, count)
+	import_from = function(self, inv_from, filter, count)
 		local total_transferred = 0
 
 		local inventory = get_inventory(inv_from)
@@ -320,17 +320,17 @@ local CLASS = {
 
 	---Exports the specified item from the system into an external inventory.
 	---@param self cctsl.ItemNetwork
-	---@param inv_to string Name of external inventory to export to
-	---@param filter cctsl.types.ItemFilter Function that determines what items are exported
-	---@param slot_to? integer
-	---@param count? integer
+	---@param inv_to string name of external inventory to export to
+	---@param filter cctsl.types.ItemFilter function to determine what items are exported
+	---@param slot_to? integer slot index of item stack to export to
+	---@param count? integer number of items to export from the network
 	---@return integer total_transferred
-	export_items = function(self, inv_to, filter, slot_to, count)
+	export_to = function(self, inv_to, filter, slot_to, count)
 		local total_transferred = 0
 
 		for inv, slot in self:iter_items(filter) do
 			local remaining = count ~= nil and count - total_transferred or nil
-			local transferred = self:push_items(inv, slot, inv_to, slot_to, remaining)
+			local transferred = self:push_from_to(inv, slot, inv_to, slot_to, remaining)
 
 			total_transferred = total_transferred + transferred
 
