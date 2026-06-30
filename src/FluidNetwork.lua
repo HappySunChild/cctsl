@@ -11,7 +11,7 @@ local INVALID_TANK = 'Peripheral "%s" is not a valid tank!'
 
 ---@param tank_name string
 ---@return cc.peripheral.FluidStorage
-local function get_tank(tank_name)
+local function internal_get_tank(tank_name)
 	local tank = peripheral.wrap(tank_name)
 
 	if tank == nil then
@@ -34,7 +34,7 @@ local CLASS = {
 	add_tank = function(self, tank_name)
 		self.tracked_tanks[tank_name] = {
 			name = tank_name,
-			remote = get_tank(tank_name),
+			remote = internal_get_tank(tank_name),
 			fluids = {},
 		}
 	end,
@@ -45,7 +45,7 @@ local CLASS = {
 		for _, tank_name in next, tank_names do
 			self.tracked_tanks[tank_name] = {
 				name = tank_name,
-				remote = get_tank(tank_name),
+				remote = internal_get_tank(tank_name),
 				fluids = {},
 			}
 		end

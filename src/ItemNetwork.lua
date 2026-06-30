@@ -29,6 +29,7 @@ local TURTLE_COMPAT = {
 local _THIS_COMPUTER = assert(peripheral.find("modem"), "No modem connected to computer!").getNameLocal()
 
 ---@alias cctsl.types.ItemFilter fun(item: cc.types.items.BasicItemStackDetails, inv_name: string, slot: number): boolean
+---@alias cctsl.types.ItemSorter fun(a: cc.types.items.BasicItemStackDetails, b: cc.types.items.BasicItemStackDetails): boolean
 
 ---@class cctsl.types.Inventory
 ---@field name string
@@ -38,7 +39,7 @@ local _THIS_COMPUTER = assert(peripheral.find("modem"), "No modem connected to c
 
 ---@param inv_name string
 ---@return cc.peripheral.Inventory
-local function get_inventory(inv_name)
+local function internal_get_inventory(inv_name)
 	-- if we're trying to get ourselves and we're a turtle, then return the inventory-like interface for the turtle
 	if turtle ~= nil and inv_name == _THIS_COMPUTER then
 		return TURTLE_COMPAT
@@ -57,9 +58,7 @@ local function get_inventory(inv_name)
 	return inventory
 end
 
----@param a cc.types.items.BasicItemStackDetails
----@param b cc.types.items.BasicItemStackDetails
----@return boolean
+---@type cctsl.types.ItemSorter
 local function default_item_sort(a, b)
 	return a.count > b.count
 end
@@ -74,7 +73,7 @@ local CLASS = {
 	add_inventory = function(self, inv_name)
 		self.tracked_inventories[inv_name] = {
 			name = inv_name,
-			remote = get_inventory(inv_name),
+			remote = internal_get_inventory(inv_name),
 			items = {},
 			slot_count = -1,
 		}
@@ -87,7 +86,7 @@ local CLASS = {
 		for _, inv_name in next, inv_names do
 			self.tracked_inventories[inv_name] = {
 				name = inv_name,
-				remote = get_inventory(inv_name),
+				remote = internal_get_inventory(inv_name),
 				items = {},
 				slot_count = -1,
 			}
@@ -167,7 +166,7 @@ local CLASS = {
 	---
 	---You can specify your own sorter callback.
 	---@param self cctsl.ItemNetwork
-	---@param sorter? fun(a: cc.types.items.BasicItemStackDetails, b: cc.types.items.BasicItemStackDetails): boolean function to determine sort order
+	---@param sorter? cctsl.types.ItemSorter function to determine sort order
 	---@return cc.types.items.BasicItemStackDetails[]
 	get_network_items_sorted = function(self, sorter)
 		local sorted_output = {}
@@ -304,7 +303,7 @@ local CLASS = {
 	import_from = function(self, inv_from, filter, count)
 		local total_transferred = 0
 
-		local inventory = get_inventory(inv_from)
+		local inventory = internal_get_inventory(inv_from)
 
 		for slot, item in next, inventory.list() do
 			if filter(item, inv_from, slot) then
